@@ -1,0 +1,21 @@
+{
+  "name": "@tradle/keeper",
+  "version": "1.0.0",
+  "description": "encrypted levelup with optional key/value validation based on tradle protocol",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test"
+  },
+  "author": "Mark Vayngrib <mark@tradle.io> (http://github.com/mvayngrib)",
+  "license": "MIT",
+  "devDependencies": {
+    "memdown": "^1.1.2",
+    "tape": "^4.5.1"
+  },
+  "dependencies": {
+    "@tradle/protocol": "tradle/protocol",
+    "error": "^7.0.2",
+    "level-encrypt": "tradle/level-encrypt",
+    "levelup": "^1.3.2"
+  }
+}
