@@ -43,8 +43,6 @@ module.exports = function keeper (opts) {
     if (valid) {
       return batchFn.apply(db, arguments)
     }
-
-    cb(new Error('batch contains invalid rows'))
   }
 
   return db
