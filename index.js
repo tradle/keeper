@@ -11,14 +11,11 @@ module.exports = function keeper (opts) {
   //   dangerous: accept passed in key on 'put'
   const encryptionOpts = opts.encryption
   const validateOnPut = opts.validateOnPut
-  const passwordBased = encryption(encryptionOpts)
-
-  const db = levelup(opts.path, {
-    db: opts.db,
-    keyEncoding: { encode: sha256 },
-    valueEncoding: passwordBased.valueEncoding
+  const rawDB = levelup(opts.path, {
+    db: opts.db
   })
 
+  const db = encryption.toEncrypted(rawDB, encryptionOpts)
   const putFn = db.put
   db.put = function (key, value, opts, cb) {
     if (maybeValidate(key, value, opts, cb)) {

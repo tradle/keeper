@@ -16,7 +16,7 @@
   "dependencies": {
     "@tradle/protocol": "tradle/protocol",
     "error": "^7.0.2",
-    "level-encrypt": "^1.1.0",
+    "level-encrypt": "^2.0.0",
     "levelup": "^1.3.2"
   }
 }
