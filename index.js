@@ -10,10 +10,6 @@ module.exports = function keeper (opts) {
   //   safe: generate key from value on 'put'
   //   dangerous: accept passed in key on 'put'
   const encryptionOpts = opts.encryption
-  if (!encryptionOpts.password) {
-    throw new Error('expected "password"')
-  }
-
   const validateOnPut = opts.validateOnPut
   const passwordBased = encryption(encryptionOpts)
 

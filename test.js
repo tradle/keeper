@@ -1,4 +1,6 @@
+var crypto = require('crypto')
 var test = require('tape')
+var parallel = require('run-parallel')
 var memdown = require('memdown')
 var levelup = require('levelup')
 var protocol = require('@tradle/protocol')
@@ -7,9 +9,7 @@ var TYPE = constants.TYPE
 var createKeeper = require('./')
 var counter = 0
 
-test('keeper', function (t) {
-  t.plan(4)
-
+test('basic', function (t) {
   var sigKey = protocol.genECKey()
   var author = {
     sign: function (msg, cb) {
@@ -18,49 +18,62 @@ test('keeper', function (t) {
     sigPubKey: sigKey
   }
 
-  var encryption = { password: 'blah' }
-  var path = 'test'
-  var keeper = createKeeper({ path, encryption, db: memdown })
-  var obj = { hey: 'ho', [TYPE]: 'something' }
-  protocol.sign({ object: obj, author: author }, function (err, result) {
-    if (err) throw err
+  var encryptions = [
+    { key: crypto.randomBytes(32), salt: crypto.randomBytes(32) },
+    { password: 'blah' }
+  ]
 
-    obj = result.object
-    var key = protocol.link(obj, 'hex')
-    // should fail (invalid key)
-    keeper.put('bad', obj, function (err) {
-      t.equal(err.type, 'invalidkey')
-
-      // should succeed
-      keeper.put(key, obj, function (err) {
+  var iteration = 0
+  parallel(encryptions.map(function (encryption) {
+    return function (cb) {
+      var path = 'test' + (iteration++)
+      var keeper = createKeeper({ path, encryption, db: memdown })
+      var obj = { hey: 'ho', [TYPE]: 'something' }
+      protocol.sign({ object: obj, author: author }, function (err, result) {
         if (err) throw err
 
-        keeper.get(key, function (err, decrypted) {
-          if (err) throw err
+        obj = result.object
+        var key = protocol.link(obj, 'hex')
+        // should fail (invalid key)
+        keeper.put('bad', obj, function (err) {
+          t.equal(err.type, 'invalidkey')
 
-          t.same(decrypted, obj)
-          // allow disabling of validation
-          keeper.put('bad', obj, { validate: false }, function (err) {
+          // should succeed
+          keeper.put(key, obj, function (err) {
             if (err) throw err
 
-            // invalidate signature
-            obj.blah = 'ha'
-            keeper.put(key, obj, function (err) {
-              t.equal(err.type, 'invalidsignature')
+            keeper.get(key, function (err, decrypted) {
+              if (err) throw err
 
-              keeper.close(function (err) {
+              t.same(decrypted, obj)
+              // allow disabling of validation
+              keeper.put('bad', obj, { validate: false }, function (err) {
                 if (err) throw err
 
-                db = levelup('test', { db: memdown })
-                db.get(key, function (err) {
-                  t.ok(err) // actual key is hashed
-                  db.close()
+                // invalidate signature
+                obj.blah = 'ha'
+                keeper.put(key, obj, function (err) {
+                  t.equal(err.type, 'invalidsignature')
+
+                  keeper.close(function (err) {
+                    if (err) throw err
+
+                    db = levelup('test', { db: memdown })
+                    db.get(key, function (err) {
+                      t.ok(err) // actual key is hashed
+                      db.close()
+                      cb()
+                    })
+                  })
                 })
               })
             })
           })
         })
       })
-    })
+    }
+  }), function (err) {
+    t.error(err)
+    t.end()
   })
 })
