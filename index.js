@@ -38,6 +38,10 @@ module.exports = function keeper (opts) {
     }
   }
 
+  db.close = function (cb) {
+    rawDB.close(cb)
+  }
+
   return db
 
   function maybeValidate (key, value, opts, cb) {
