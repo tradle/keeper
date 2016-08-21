@@ -12,7 +12,9 @@ module.exports = function keeper (opts) {
   const encryptionOpts = opts.encryption
   const validateOnPut = opts.validateOnPut
   const rawDB = levelup(opts.path, {
-    db: opts.db
+    db: opts.db,
+    keyEncoding: opts.keyEncoding || 'binary',
+    valueEncoding: opts.valueEncoding || 'binary'
   })
 
   const db = encryption.toEncrypted(rawDB, encryptionOpts)
