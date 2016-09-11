@@ -2,7 +2,7 @@
 const crypto = require('crypto')
 const levelup = require('levelup')
 const encryption = require('level-encrypt')
-const protocol = require('@tradle/protocol')
+// const protocol = require('@tradle/protocol')
 const errors = require('./errors')
 
 module.exports = function keeper (opts) {
@@ -10,7 +10,6 @@ module.exports = function keeper (opts) {
   //   safe: generate key from value on 'put'
   //   dangerous: accept passed in key on 'put'
   const encryptionOpts = opts.encryption
-  const validateOnPut = opts.validateOnPut
   const rawDB = levelup(opts.path, {
     db: opts.db,
     keyEncoding: opts.keyEncoding || 'binary',
@@ -18,55 +17,8 @@ module.exports = function keeper (opts) {
   })
 
   const db = encryption.toEncrypted(rawDB, encryptionOpts)
-  const putFn = db.put
-  db.put = function (key, value, opts, cb) {
-    if (maybeValidate(key, value, opts, cb)) {
-      putFn.apply(db, arguments)
-    }
-  }
-
-  const batchFn = db.batch
-  db.batch = function (batch, opts, cb) {
-    if (!arguments.length || !Array.isArray(batch)) {
-      throw new Error('chained batch mode is not supported')
-    }
-
-    const valid = batch.every(function (op) {
-      return op.type === 'del' || maybeValidate(op.key, op.value, opts, cb)
-    })
-
-    if (valid) {
-      return batchFn.apply(db, arguments)
-    }
-  }
-
   db.close = function (cb) {
     rawDB.close(cb)
-  }
-
-  return db
-
-  function maybeValidate (key, value, opts, cb) {
-    if (typeof opts === 'function') {
-      cb = opts
-      opts = null
-    }
-
-    var validate = opts && ('validate' in opts) ? opts.validate : validateOnPut
-    if (validate === false) return true
-
-    var err
-    if (protocol.link(value, 'hex') !== key) {
-      err = new errors.InvalidKey({ key: key })
-    } else if (!protocol.verifySig({ object: value })) {
-      err = errors.InvalidSignature({ sig: value[protocol.constants.SIG] })
-    }
-
-    if (!err) return true
-
-    process.nextTick(function () {
-      cb(err)
-    })
   }
 
   // const multiPut = opts.multiPut
@@ -96,7 +48,3 @@ module.exports = function keeper (opts) {
 //     db.batch(batch, cb)
 //   }
 // }
-
-function sha256 (data) {
-  return crypto.createHash('sha256').update(data).digest('hex')
-}

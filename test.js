@@ -35,38 +35,22 @@ test('basic', function (t) {
 
         obj = result.object
         var key = protocol.link(obj, 'hex')
-        // should fail (invalid key)
-        keeper.put('bad', obj, function (err) {
-          t.equal(err.type, 'invalidkey')
+        // should succeed
+        keeper.put(key, obj, function (err) {
+          if (err) throw err
 
-          // should succeed
-          keeper.put(key, obj, function (err) {
+          keeper.get(key, function (err, decrypted) {
             if (err) throw err
 
-            keeper.get(key, function (err, decrypted) {
+            t.same(decrypted, obj)
+            keeper.close(function (err) {
               if (err) throw err
 
-              t.same(decrypted, obj)
-              // allow disabling of validation
-              keeper.put('bad', obj, { validate: false }, function (err) {
-                if (err) throw err
-
-                // invalidate signature
-                obj.blah = 'ha'
-                keeper.put(key, obj, function (err) {
-                  t.equal(err.type, 'invalidsignature')
-
-                  keeper.close(function (err) {
-                    if (err) throw err
-
-                    db = levelup('test', { db: memdown })
-                    db.get(key, function (err) {
-                      t.ok(err) // actual key is hashed
-                      db.close()
-                      cb()
-                    })
-                  })
-                })
+              db = levelup('test', { db: memdown })
+              db.get(key, function (err) {
+                t.ok(err) // actual key is hashed
+                db.close()
+                cb()
               })
             })
           })
