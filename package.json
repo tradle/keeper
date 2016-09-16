@@ -1,6 +1,6 @@
 {
   "name": "@tradle/keeper",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "encrypted levelup with optional key/value validation based on tradle protocol",
   "main": "index.js",
   "scripts": {
