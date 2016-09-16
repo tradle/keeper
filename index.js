@@ -12,7 +12,7 @@ module.exports = function keeper (opts) {
   const encryptionOpts = opts.encryption
   const rawDB = levelup(opts.path, {
     db: opts.db,
-    keyEncoding: opts.keyEncoding || 'binary',
+    keyEncoding: 'binary',
     valueEncoding: opts.valueEncoding || 'binary'
   })
 
