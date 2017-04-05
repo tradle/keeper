@@ -1,5 +1,6 @@
 
 const Cache = require('lru-cache')
+const clone = require('clone')
 
 // Would be nice to do this without monkey-patching
 // but attempts with level-updown caused fun encoding nightmares
@@ -12,13 +13,13 @@ module.exports = function cachify (keeper, opts) {
   const batchFn = keeper.batch
 
   keeper.get = function (key, cb) {
-    const cached = cache.get(key)
+    const cached = getCached(key)
     if (cached) return process.nextTick(() => cb(null, cached))
 
     getFn.call(keeper, key, function (err, val) {
       if (err) return cb(err)
 
-      cache.set(key, val)
+      setCached(key, val)
       cb(null, val)
     })
   }
@@ -26,7 +27,7 @@ module.exports = function cachify (keeper, opts) {
   keeper.put = function (key, val, cb) {
     if (cache.get(key) === val) return process.nextTick(() => cb())
 
-    cache.set(key, val)
+    setCached(key, val)
     // safe to pre-cache?
     putFn.call(keeper, key, val, function (err) {
       if (err) {
@@ -54,7 +55,7 @@ module.exports = function cachify (keeper, opts) {
 
     batch.forEach(row => {
       if (row.type === 'put') {
-        cache.set(row.key, row.value)
+        setCached(row.key, row.value)
       } else {
         cache.del(row.key)
       }
@@ -73,6 +74,15 @@ module.exports = function cachify (keeper, opts) {
 
       cb()
     })
+  }
+
+  function setCached (key, val) {
+    cache.set(key, clone(val))
+  }
+
+  function getCached (key) {
+    const val = cache.get(key)
+    if (val) return clone(val)
   }
 
   return keeper
