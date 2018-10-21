@@ -25,7 +25,7 @@ module.exports = function cachify (keeper, opts) {
   }
 
   keeper.put = function (key, val, cb) {
-    if (cache.get(key) === val) return process.nextTick(() => cb())
+    if (cache.has(key)) return process.nextTick(() => cb())
 
     setCached(key, val)
     // safe to pre-cache?
