@@ -48,11 +48,13 @@ module.exports = function cachify (keeper, opts) {
     if (!batch) throw new Error('chained batch not supported')
 
     batch = batch.filter(row => {
-      return !(row.type === 'put' && cache.get(row.key) === row.value)
+      const isDuplicatePut = row.type === 'put' && cache.has(row.key)
+      return !isDuplicatePut
     })
 
     if (!batch.length) return process.nextTick(() => cb())
 
+    // safe to pre-cache?
     batch.forEach(row => {
       if (row.type === 'put') {
         setCached(row.key, row.value)
